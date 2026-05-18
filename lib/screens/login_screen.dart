@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,9 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     try {
       await AuthService.signIn(
@@ -51,66 +50,13 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-  Future<void> _register() async {
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập email và mật khẩu')),
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mật khẩu phải từ 6 ký tự trở lên')),
-      );
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      await AuthService.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đăng ký thành công')),
-      );
-
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đăng ký thất bại: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     }
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     try {
       await AuthService.signInWithGoogle();
@@ -128,11 +74,18 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     }
+  }
+
+  void _openRegisterScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RegisterScreen(),
+      ),
+    );
   }
 
   @override
@@ -248,7 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 const Text(
                   'Đăng nhập',
                   style: TextStyle(
@@ -257,7 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 const Text(
                   'Chào mừng bạn quay trở lại!',
                   style: TextStyle(
@@ -265,14 +222,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 18,
                   ),
                 ),
+
                 const SizedBox(height: 30),
+
                 _inputField(
                   label: 'Email',
                   hint: 'your@email.com',
                   controller: emailController,
                   prefixIcon: Icons.mail_outline,
                 ),
+
                 const SizedBox(height: 20),
+
                 _inputField(
                   label: 'Mật khẩu',
                   hint: '••••••••',
@@ -280,11 +241,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: Icons.lock_outline,
                   isPassword: true,
                 ),
+
                 const SizedBox(height: 12),
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: isLoading ? null : () {},
                     child: const Text(
                       'Quên mật khẩu?',
                       style: TextStyle(
@@ -294,7 +257,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -316,7 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 28),
+
                 Row(
                   children: [
                     const Expanded(child: Divider(color: Colors.white24)),
@@ -332,7 +299,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider(color: Colors.white24)),
                   ],
                 ),
+
                 const SizedBox(height: 28),
+
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -363,7 +332,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 28),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -375,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: isLoading ? null : _register,
+                      onPressed: isLoading ? null : _openRegisterScreen,
                       child: const Text(
                         'Đăng ký ngay',
                         style: TextStyle(
