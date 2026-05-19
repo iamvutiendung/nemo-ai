@@ -231,7 +231,7 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
 
     try {
       final response = await dio.post(
-        'http://localhost:3000/api/download-video',
+        'https://nemo-ai-production.up.railway.app',
         data: {
           'url': url.trim(),
           'platform': platform,
