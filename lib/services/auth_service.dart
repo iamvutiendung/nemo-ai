@@ -11,6 +11,11 @@ class AuthService {
   static String? get userId => currentUser?.id;
 
   static String? get email => currentUser?.email;
+  static Future<void> signInWithFacebook() async {
+    await Supabase.instance.client.auth.signInWithOAuth(
+      OAuthProvider.facebook,
+    );
+  }
 
   static Future<AuthResponse> signUp({
     required String email,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -129,6 +130,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Future<void> _registerWithGoogle() async {
+    try {
+      await AuthService.signInWithGoogle();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đang mở Google để đăng ký...')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đăng ký Google thất bại: $e')),
+      );
+    }
+  }
+
+  Future<void> _registerWithFacebook() async {
+    try {
+      await AuthService.signInWithFacebook();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đang mở Facebook để đăng ký...')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đăng ký Facebook thất bại: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,11 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _socialButton(
                   text: 'Tiếp tục với Google',
                   icon: Icons.g_mobiledata,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đăng ký Google sẽ làm sau')),
-                    );
-                  },
+                  onTap: _registerWithGoogle,
                 ),
 
                 const SizedBox(height: 14),
@@ -256,11 +289,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _socialButton(
                   text: 'Tiếp tục với Facebook',
                   icon: Icons.facebook,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đăng ký Facebook sẽ làm sau')),
-                    );
-                  },
+                  onTap: _registerWithFacebook,
                 ),
 
                 const SizedBox(height: 24),

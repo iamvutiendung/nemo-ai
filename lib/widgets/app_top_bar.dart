@@ -11,6 +11,7 @@ import '../screens/account_screen.dart';
 import '../screens/history_screen.dart';
 import '../services/auth_service.dart';
 import '../services/user_credit_service.dart';
+import '../screens/download_video_screen.dart';
 
 class AppTopBar extends StatelessWidget {
   final String activeMenu;
@@ -217,10 +218,16 @@ class AppTopBar extends StatelessWidget {
                       ),
                       _userMenuItem(
                         icon: Icons.grid_view_rounded,
-                        title: 'My Workflows',
+                        title: 'Tải video',
                         onTap: () {
                           Navigator.pop(dialogContext);
-                          _showComingSoon(context, 'My Workflows');
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DownloadVideoScreen(),
+                            ),
+                          );
                         },
                       ),
                       _userMenuItem(
@@ -749,9 +756,16 @@ class AppTopBar extends StatelessWidget {
                 ),
                 _topMenuItem(
                   context,
-                  'Workflow',
-                      () => _showComingSoon(context, 'Workflow'),
-                  active: activeMenu == 'workflow',
+                  'Tải video',
+                      () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DownloadVideoScreen(),
+                      ),
+                    );
+                  },
+                  active: activeMenu == 'Tải video',
                 ),
                 _topMenuItem(
                   context,
