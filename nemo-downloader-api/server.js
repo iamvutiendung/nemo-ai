@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import YTDlpWrap from "yt-dlp-wrap";
 
 const app = express();
+const requestMap = new Map();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -28,6 +29,25 @@ app.get("/", (req, res) => {
 
 app.post("/api/download-video", async (req, res) => {
   try {
+    const ip =
+      req.headers['x-forwarded-for'] ||
+      req.socket.remoteAddress ||
+      'unknown';
+
+    const lastRequestTime = requestMap.get(ip);
+
+    if (lastRequestTime) {
+      const diff = Date.now() - lastRequestTime;
+
+      if (diff < 8000) {
+        return res.status(429).json({
+          success: false,
+          message: 'Bạn thao tác quá nhanh. Vui lòng đợi vài giây.',
+        });
+      }
+    }
+
+    requestMap.set(ip, Date.now());
     const { url, platform } = req.body;
 
     if (!url) {

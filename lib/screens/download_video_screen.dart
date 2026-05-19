@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 
 class DownloadVideoScreen extends StatefulWidget {
   const DownloadVideoScreen({super.key});
@@ -12,6 +13,8 @@ class DownloadVideoScreen extends StatefulWidget {
 class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
   int selectedTab = 0;
   bool isDownloading = false;
+  DateTime? lastDownloadTime;
+  String? lastDownloadUrl;
   final Dio dio = Dio();
 
   final tiktokController = TextEditingController();
@@ -200,6 +203,25 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
             ],
           ),
 
+          if (lastDownloadUrl != null) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(
+                  ClipboardData(text: lastDownloadUrl!),
+                );
+
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã copy link tải')),
+                );
+              },
+              icon: const Icon(Icons.copy),
+              label: const Text('Copy link tải'),
+            ),
+          ],
+
           const SizedBox(height: 26),
 
           Row(
@@ -218,6 +240,17 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
     required String url,
     required String platform,
   }) async {
+    final now = DateTime.now();
+
+    if (lastDownloadTime != null &&
+        now.difference(lastDownloadTime!).inSeconds < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chờ vài giây rồi tải tiếp')),
+      );
+      return;
+    }
+
+    lastDownloadTime = now;
     if (url.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng dán link video')),
@@ -242,6 +275,9 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
 
       if (data['success'] == true) {
         final downloadUrl = data['downloadUrl'];
+        setState(() {
+          lastDownloadUrl = downloadUrl;
+        });
 
         await launchUrl(
           Uri.parse(downloadUrl),
@@ -275,7 +311,9 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
   Widget build(BuildContext context) {
     final isTikTok = selectedTab == 0;
 
-    return Scaffold(
+    return Stack(
+        children: [
+        Scaffold(
       backgroundColor: const Color(0xFF071427),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
@@ -342,6 +380,50 @@ class _DownloadVideoScreenState extends State<DownloadVideoScreen> {
           ],
         ),
       ),
+        ),
+
+          if (isDownloading)
+            Container(
+              color: Colors.black.withOpacity(0.55),
+              child: Center(
+                child: Container(
+                  width: 360,
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E2A3D),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 22),
+                      Text(
+                        'Nemo AI đang xử lý video...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Vui lòng đợi, quá trình tải có thể mất vài giây.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 14,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
     );
   }
 }
