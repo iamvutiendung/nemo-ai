@@ -7,10 +7,16 @@ import YTDlpWrap from "yt-dlp-wrap";
 
 const app = express();
 const requestMap = new Map();
+
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+
+app.use(
+  express.json({
+    limit: "10mb",
+  })
+);
 
 const downloadsDir = path.join(process.cwd(), "downloads");
 
@@ -29,10 +35,14 @@ app.get("/", (req, res) => {
 
 app.post("/api/download-video", async (req, res) => {
   try {
+    // =========================
+    // Anti spam
+    // =========================
+
     const ip =
-      req.headers['x-forwarded-for'] ||
+      req.headers["x-forwarded-for"] ||
       req.socket.remoteAddress ||
-      'unknown';
+      "unknown";
 
     const lastRequestTime = requestMap.get(ip);
 
@@ -42,12 +52,17 @@ app.post("/api/download-video", async (req, res) => {
       if (diff < 8000) {
         return res.status(429).json({
           success: false,
-          message: 'Bạn thao tác quá nhanh. Vui lòng đợi vài giây.',
+          message: "Bạn thao tác quá nhanh. Vui lòng đợi vài giây.",
         });
       }
     }
 
     requestMap.set(ip, Date.now());
+
+    // =========================
+    // Request body
+    // =========================
+
     const { url, platform } = req.body;
 
     if (!url) {
@@ -57,7 +72,14 @@ app.post("/api/download-video", async (req, res) => {
       });
     }
 
-    const isTikTok = url.includes("tiktok.com") || url.includes("vt.tiktok.com");
+    // =========================
+    // Validate platform
+    // =========================
+
+    const isTikTok =
+      url.includes("tiktok.com") ||
+      url.includes("vt.tiktok.com");
+
     const isFacebook =
       url.includes("facebook.com") ||
       url.includes("fb.watch") ||
@@ -66,29 +88,67 @@ app.post("/api/download-video", async (req, res) => {
     if (!isTikTok && !isFacebook) {
       return res.status(400).json({
         success: false,
-        message: "Chỉ hỗ trợ link TikTok hoặc Facebook",
+        message: "Chỉ hỗ trợ TikTok hoặc Facebook",
       });
     }
 
+    // =========================
+    // File info
+    // =========================
+
     const fileId = uuidv4();
-    const safePlatform = platform || (isTikTok ? "tiktok" : "facebook");
+
+    const safePlatform =
+      platform || (isTikTok ? "tiktok" : "facebook");
+
     const fileName = `${safePlatform}-${fileId}.mp4`;
+
     const outputPath = path.join(downloadsDir, fileName);
+
+    // =========================
+    // yt-dlp
+    // =========================
 
     const ytDlpWrap = new YTDlpWrap();
 
     await ytDlpWrap.execPromise([
       url,
+
       "-o",
       outputPath,
+
       "-f",
-      "best[ext=mp4]/best",
+      "bestvideo+bestaudio/best",
+
+      "--merge-output-format",
+      "mp4",
+
       "--no-warnings",
+
       "--no-check-certificates",
+
+      "--socket-timeout",
+      "30",
+
+      "--retries",
+      "10",
+
+      "--fragment-retries",
+      "10",
+
+      "--concurrent-fragments",
+      "5",
+
+      "--force-overwrites",
     ]);
 
+    // =========================
+    // Public URL
+    // =========================
+
     const publicBaseUrl =
-      process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
+      process.env.PUBLIC_BASE_URL ||
+      `http://localhost:${PORT}`;
 
     return res.json({
       success: true,
