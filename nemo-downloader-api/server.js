@@ -9,6 +9,8 @@ const app = express();
 const requestMap = new Map();
 
 const PORT = process.env.PORT || 3000;
+const FILE_TTL_MS = 30 * 60 * 1000; // tự xóa file sau 30 phút
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // quét file cũ mỗi 5 phút
 
 app.use(cors());
 
@@ -24,6 +26,31 @@ if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
 }
 
+function cleanupOldFiles() {
+  fs.readdir(downloadsDir, (err, files) => {
+    if (err) return;
+
+    const now = Date.now();
+
+    files.forEach((file) => {
+      const filePath = path.join(downloadsDir, file);
+
+      fs.stat(filePath, (statErr, stats) => {
+        if (statErr) return;
+
+        const fileAge = now - stats.mtimeMs;
+
+        if (fileAge > FILE_TTL_MS) {
+          fs.unlink(filePath, () => {});
+        }
+      });
+    });
+  });
+}
+
+cleanupOldFiles();
+setInterval(cleanupOldFiles, CLEANUP_INTERVAL_MS);
+
 app.use("/downloads", express.static(downloadsDir));
 
 app.get("/", (req, res) => {
@@ -35,10 +62,6 @@ app.get("/", (req, res) => {
 
 app.post("/api/download-video", async (req, res) => {
   try {
-    // =========================
-    // Anti spam
-    // =========================
-
     const ip =
       req.headers["x-forwarded-for"] ||
       req.socket.remoteAddress ||
@@ -59,10 +82,6 @@ app.post("/api/download-video", async (req, res) => {
 
     requestMap.set(ip, Date.now());
 
-    // =========================
-    // Request body
-    // =========================
-
     const { url, platform } = req.body;
 
     if (!url) {
@@ -72,13 +91,8 @@ app.post("/api/download-video", async (req, res) => {
       });
     }
 
-    // =========================
-    // Validate platform
-    // =========================
-
     const isTikTok =
-      url.includes("tiktok.com") ||
-      url.includes("vt.tiktok.com");
+      url.includes("tiktok.com") || url.includes("vt.tiktok.com");
 
     const isFacebook =
       url.includes("facebook.com") ||
@@ -92,63 +106,36 @@ app.post("/api/download-video", async (req, res) => {
       });
     }
 
-    // =========================
-    // File info
-    // =========================
-
     const fileId = uuidv4();
-
-    const safePlatform =
-      platform || (isTikTok ? "tiktok" : "facebook");
-
+    const safePlatform = platform || (isTikTok ? "tiktok" : "facebook");
     const fileName = `${safePlatform}-${fileId}.mp4`;
-
     const outputPath = path.join(downloadsDir, fileName);
-
-    // =========================
-    // yt-dlp
-    // =========================
 
     const ytDlpWrap = new YTDlpWrap();
 
     await ytDlpWrap.execPromise([
       url,
-
       "-o",
       outputPath,
-
       "-f",
       "bestvideo+bestaudio/best",
-
       "--merge-output-format",
       "mp4",
-
       "--no-warnings",
-
       "--no-check-certificates",
-
       "--socket-timeout",
       "30",
-
       "--retries",
       "10",
-
       "--fragment-retries",
       "10",
-
       "--concurrent-fragments",
       "5",
-
       "--force-overwrites",
     ]);
 
-    // =========================
-    // Public URL
-    // =========================
-
     const publicBaseUrl =
-      process.env.PUBLIC_BASE_URL ||
-      `http://localhost:${PORT}`;
+      process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
 
     return res.json({
       success: true,
